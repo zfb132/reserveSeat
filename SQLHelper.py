@@ -16,6 +16,7 @@ def initDataBase():
             "create database if not exists {} default character set utf8".format(config.DBNAME))
         cursor.close()
         db.close()
+        print("创建数据库成功")
     except Exception as e:
         print(e)
         
@@ -28,6 +29,7 @@ def initTable():
         sql = 'create table if not exists seat(\
                 id int(20) not null,\
                 name varchar(10) default null,\
+                indexID varchar(10) default null,\
                 type varchar(20) default null,\
                 status varchar(20) default null,\
                 window boolean,\
@@ -43,6 +45,7 @@ def initTable():
         cursor.execute(sql)
         cursor.close()
         db.close()
+        print("创建数据表成功")
     except Exception as e:
         print(e)
         
