@@ -10,6 +10,7 @@ import json
 import requests
 import datetime
 import time
+import random
 
 import config
 import SQLHelper
@@ -18,14 +19,6 @@ import SQLHelper
 headers = {
     'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 ",
     'Host':"seat.lib.whu.edu.cn"
-}
-# 预订座位url的参数
-bookParams = {
-    'token':'',
-    'startTime':config.STIME,
-    'endTime':config.ETIME,
-    'seat':config.SEATID,
-    'date':''
 }
 # 预约系统网址
 url_base = "http://seat.lib.whu.edu.cn"
@@ -117,8 +110,8 @@ def saveSeatsInfoOfRoom(id,date,token,roomInfo):
                     # 开始座位信息插入到数据库
                     try:
                         cursor.execute(
-                            "insert into seat values ({},'{}','{}','{}',{},{},{},{},{},'{}',{},'{}')".format(
-                        seat['id'],seat['name'],seat['type'],seat['status'],seat['window'],
+                            "insert into seat values ({},'{}','{}','{}','{}',{},{},{},{},{},'{}',{},'{}')".format(
+                        seat['id'],seat['name'],k,seat['type'],seat['status'],seat['window'],
                         seat['power'],seat['computer'],seat['local'],roomInfo[2],roomInfo[0],roomInfo[3],roomInfo[1])
                         )
                     except Exception as e:
@@ -134,16 +127,19 @@ def saveSeatsInfoOfRoom(id,date,token,roomInfo):
         raise Exception('获取座位信息异常：'+json.loads(result.text)['message'])
         
 # 预约指定座位        
-def reserveSeat(token,seat,date):
+def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     url = url_base + "/rest/v2/freeBook"
+    bookParams = {}
     bookParams['token'] = token
     bookParams['seat'] = seat
     bookParams['date'] = date
+    bookParams['startTime'] = stime
+    bookParams['endTime'] = etime
     result = requests.post(url, params=bookParams, headers=headers)
     print(result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
-        return True
+        return [True,json.loads(result.text)['data']]
     else:
         raise Exception('预约出现异常：'+json.loads(result.text)['message'])
 
@@ -156,10 +152,73 @@ def cancelSeat(token,id):
         return True
     else:
         raise Exception('取消预约异常：'+json.loads(result.text)['message'])
-        
-if __name__ == '__main__':
-    SQLHelper.initDataBase()
-    SQLHelper.initTable()
+
+# 按时间筛选：date的格式2018-10-23 begin的示例600 roomIDs是list，按照优先级排序
+def searchSeatByTime(date,begin,end,roomIDs,token):
+    url = url_base + "/rest/v2/searchSeats/{}/{}/{}".format(date,begin,end)
+    # 所有符合条件的座位ID
+    seatIDs=[]
+    searchParams = {}
+    # 默认信息学部图书馆
+    searchParams['buildingId'] = 1
+    searchParams['batch'] = 9999
+    searchParams['token'] = token
+    # 每个房间都要搜索
+    for room in roomIDs:
+        searchParams['roomId'] = room
+        result = requests.post(url,params=searchParams,headers=headers)
+        #print(result.text)
+        status = json.loads(result.text)['status']
+        if(status == True):
+            data = json.loads(result.text)['data']['seats']
+            # 若无空闲座位则进行下一个房间
+            if(len(data)<1):
+                print('房间{}无空闲座位'.format(room))
+                continue
+            for k in data:
+                seat = data[k]
+                seatIDs.append(seat['id'])
+        else:
+            print('搜索出错！')
+    print(seatIDs)
+    return seatIDs
+
+# 自动按时间筛选并预约
+def autoSearchBookByTime(startTime=[8,30],endTime=[21,0]):
+    # 登录预约系统
+    try:
+        token = login(config.USER,config.PASSWORD)
+    except Exception as e:
+        print(e)
+    date = str(datetime.date.today())
+    # 最大尝试次数
+    num = 100
+    stime = startTime[0]*60 + startTime[1]
+    etime = endTime[0]*60 + endTime[1]
+    while(num):
+        IDs = searchSeatByTime(date,stime,etime,[14,16],token)
+        print('本次搜索到空闲座位：' + ''.join(map(str,IDs)))
+        if(len(IDs) > 0):
+            result = reserveSeat(token,IDs[0],date,stime,etime)
+            if(result[0]):
+                res = result[1]
+                message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
+                break;
+            else:
+                message = '-1。\n预约失败！！！'
+        num = num - 1
+        # 随机等待30s-100s
+        wait = random.randint(30,100)
+        print('{}s后进行下次尝试'.format(wait))
+        time.sleep(wait)
+    # 将相关信息发送到手机
+    params = ['zfb',message]
+    print('----\n'+message)
+    #sendSMS(config.PHONE_NUMBER,params)
+
+
+# 自动预约心仪的座位
+def autoBookFavorite():
     normal = True
     isBooked = False
     # 登录预约系统
@@ -169,11 +228,11 @@ if __name__ == '__main__':
         normal = False
         print(e)
     # 获取及写入座位信息
-    rooms = getRoomsInfo(token)
-    dateToday = str(datetime.date.today())
-    for room in rooms:
-        rooms[room].append(room)
-        saveSeatsInfoOfRoom(room, dateToday, token, rooms[room])
+    #rooms = getRoomsInfo(token)
+    #dateToday = str(datetime.date.today())
+    #for room in rooms:
+    #    rooms[room].append(room)
+    #    saveSeatsInfoOfRoom(room, dateToday, token, rooms[room])
 
     # 开始预约流程
     if(normal):
@@ -184,16 +243,18 @@ if __name__ == '__main__':
             exit(1)
         try:
             # 获取明天日期
-            #date = str(datetime.date.today() + datetime.timedelta(days = 1))
-            date = str(datetime.date.today())
-            isBooked = reserveSeat(token,config.SEATID,date)
+            date = str(datetime.date.today() + datetime.timedelta(days = 1))
+            #date = str(datetime.date.today())
+            result = reserveSeat(token,config.SEATID,date)
+            isBooked = result[0]
         except Exception as e:
             # 如果预约失败
-            for i in range(-15,10):
+            for i in ['3644','3645','3670','3671']:
                 # 延时0.5s
                 time.sleep(0.5)
                 try:
-                    isBooked = reserveSeat(token,str(i+int(config.SEATID)),date)
+                    result = reserveSeat(token,str(i),date)
+                    isBooked = result[0]
                     if(isBooked):
                         break;
                 except Exception as e:
@@ -202,9 +263,11 @@ if __name__ == '__main__':
         # 预约成功
         if(isBooked):
             # 由于返回的参数是list类型，修改后的res才是dict类型
-            res = getReservations(token)[0]
-            message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
-            print(message)
+            #print(result[1])
+            res = result[1]
+            message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res
+['location'])
+            #print(message)
         else:
             message = '-1。\n预约失败！！！'
     else:
@@ -212,7 +275,70 @@ if __name__ == '__main__':
     # 将相关信息发送到手机
     params = ['zfb',message]
     print('----\n'+message)
-    #sendSMS(config.PHONE_NUMBER,params)
+    sendSMS(config.PHONE_NUMBER,params)
+    #getHistory(1,token)
+
+
+if __name__ == '__main__':
+    autoSearchBookByTime([14,30],[21,30])
+    #autoBookFavorite()
+'''
+    normal = True
+    isBooked = False
+    # 登录预约系统
+    try:
+        token = login(config.USER,config.PASSWORD)
+    except Exception as e:
+        normal = False
+        print(e)
+    # 获取及写入座位信息
+    #rooms = getRoomsInfo(token)
+    #dateToday = str(datetime.date.today())
+    #for room in rooms:
+    #    rooms[room].append(room)
+    #    saveSeatsInfoOfRoom(room, dateToday, token, rooms[room])
+
+    # 开始预约流程
+    if(normal):
+        res = getReservations(token)
+        # 如果当前存在预约信息则退出程序
+        if res:
+            print('已有预约，程序将退出')
+            exit(1)
+        try:
+            # 获取明天日期
+            date = str(datetime.date.today() + datetime.timedelta(days = 1))
+            #date = str(datetime.date.today())
+            result = reserveSeat(token,config.SEATID,date)
+            isBooked = result[0]
+        except Exception as e:
+            # 如果预约失败
+            for i in ['3644','3645','3670','3671']:
+                # 延时0.5s
+                time.sleep(0.5)
+                try:
+                    result = reserveSeat(token,str(i),date)
+                    isBooked = result[0]
+                    if(isBooked):
+                        break;
+                except Exception as e:
+                    print(e)
+                    pass
+        # 预约成功
+        if(isBooked):
+            # 由于返回的参数是list类型，修改后的res才是dict类型
+            #print(result[1])
+            res = result[1]
+            message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
+            #print(message)
+        else:
+            message = '-1。\n预约失败！！！'
+    else:
+        message = '-1。\n登录出现问题！！！'
+    # 将相关信息发送到手机
+    params = ['zfb',message]
+    print('----\n'+message)
+    sendSMS(config.PHONE_NUMBER,params)
     #getHistory(1,token)
     
-
+'''
