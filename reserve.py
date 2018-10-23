@@ -265,8 +265,7 @@ def autoBookFavorite():
             # 由于返回的参数是list类型，修改后的res才是dict类型
             #print(result[1])
             res = result[1]
-            message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res
-['location'])
+            message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
             #print(message)
         else:
             message = '-1。\n预约失败！！！'
