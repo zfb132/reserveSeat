@@ -184,15 +184,10 @@ def searchSeatByTime(date,begin,end,roomIDs,token):
     return seatIDs
 
 # 自动按时间筛选并预约
-def autoSearchBookByTime(startTime=[8,30],endTime=[21,0]):
-    # 登录预约系统
-    try:
-        token = login(config.USER,config.PASSWORD)
-    except Exception as e:
-        print(e)
+def autoSearchBookByTime(token,startTime=[8,30],endTime=[21,0]):
     date = str(datetime.date.today())
     # 最大尝试次数
-    num = 100
+    num = 5000
     stime = startTime[0]*60 + startTime[1]
     etime = endTime[0]*60 + endTime[1]
     while(num):
@@ -208,7 +203,7 @@ def autoSearchBookByTime(startTime=[8,30],endTime=[21,0]):
                 message = '-1。\n预约失败！！！'
         num = num - 1
         # 随机等待30s-100s
-        wait = random.randint(30,100)
+        wait = random.randint(3,10)
         print('{}s后进行下次尝试'.format(wait))
         time.sleep(wait)
     # 将相关信息发送到手机
@@ -279,7 +274,18 @@ def autoBookFavorite():
 
 
 if __name__ == '__main__':
-    autoSearchBookByTime([14,30],[21,30])
+    # 登录预约系统
+    try:
+        token = login(config.USER,config.PASSWORD)
+    except Exception as e:
+        print(e)
+    # 当前时间是否达到22:44:59
+    now = int(time.strftime('%H%M%S'))
+    delta = now -224459
+    if((delta-1)>0):
+        # 等待时间直到满足
+        time.sleep(delta-1)
+    autoSearchBookByTime(token,[14,30],[21,30])
     #autoBookFavorite()
 '''
     normal = True
