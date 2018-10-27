@@ -11,9 +11,14 @@ import requests
 import datetime
 import time
 import random
+import logging
 
 import config
 import SQLHelper
+
+LOG_FORMAT = "%(asctime)s [%(funcName)s: %(filename)s,%(lineno)d] - %(levelname)s : %(message)s"
+DATE_FORMAT = "%m/%d/%Y %H:%M:%S"
+logging.basicConfig(filename='my.log', level=logging.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
 
 # 报头
 headers = {
@@ -30,10 +35,16 @@ def sendSMS(number,params):
         result = ssender.send_with_param(86, number, config.TEMPLATE_ID, 
                 params, sign=config.SMS_SIGN, extend="", ext="")
     except HTTPError as e:
-        print(json.dumps(e, ensure_ascii=False))
+        log = json.dumps(e, ensure_ascii=False)
+        logging.error(log)
+        print(log)
     except Exception as e:
-        print(json.dumps(e, ensure_ascii=False))
-    print(json.dumps(result, ensure_ascii=False))
+        log = json.dumps(e, ensure_ascii=False)
+        logging.error(log)
+        print(log)
+    log = json.dumps(result, ensure_ascii=False)
+    logging.debug(log)
+    print(log)
     
 # 登录预约系统
 def login(user,pwd):
@@ -42,10 +53,13 @@ def login(user,pwd):
     status = json.loads(result.text)['status']
     if(status == 'success'):
         token = json.loads(result.text)['data']['token']
+        logging.debug(token)
         print(token)
         return token
     else:
-        raise Exception('登录异常：'+json.loads(result.text)['message'])
+        log = '登录异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
         
 # 获得预约历史记录
 # offset从1开始，每次获取10条记录
@@ -57,7 +71,9 @@ def getHistory(offset,token):
         history = json.loads(result.text)['data']['reservations']
         return history
     else:
-        raise Exception('查询历史记录异常：'+json.loads(result.text)['message'])
+        log = '查询历史记录异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
 
 # 获取当前预约信息
 def getReservations(token):
@@ -68,7 +84,9 @@ def getReservations(token):
         reservations = json.loads(result.text)['data']
         return reservations
     else:
-        raise Exception('获取预约信息异常：'+json.loads(result.text)['message'])
+        log = '获取预约信息异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
         
 # 获取房间楼层信息
 def getRoomsInfo(token):
@@ -87,11 +105,15 @@ def getRoomsInfo(token):
             rooms[room[0]] = [room[1], buildings[room[2]], room[3]]
         return rooms
     else:
-        raise Exception('获取房间信息异常：'+json.loads(result.text)['message'])
+        log = '获取房间信息异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
         
 # 存储某个房间内当前所有座位信息
 def saveSeatsInfoOfRoom(id,date,token,roomInfo):
-    print('正在获取位于{}{}楼的{}的座位信息'.format(roomInfo[1],roomInfo[2],roomInfo[0]))
+    log = '正在获取位于{}{}楼的{}的座位信息'.format(roomInfo[1],roomInfo[2],roomInfo[0])
+    logging.debug(log)
+    print(log)
     url = url_base + "/rest/v2/room/layoutByDate/{}/{}?token={}".format(id,date,token)
     result = requests.get(url, headers=headers)
     status = json.loads(result.text)['status']
@@ -115,6 +137,7 @@ def saveSeatsInfoOfRoom(id,date,token,roomInfo):
                         seat['power'],seat['computer'],seat['local'],roomInfo[2],roomInfo[0],roomInfo[3],roomInfo[1])
                         )
                     except Exception as e:
+                        logging.error(str(seat)+'\n'+str(roomInfo)+repr(e))
                         print(str(seat)+'\n'+str(roomInfo))
                         print(repr(e))
             # 必须有这一句
@@ -122,9 +145,12 @@ def saveSeatsInfoOfRoom(id,date,token,roomInfo):
             cursor.close()
             db.close()
         except Exception as e:
+            logging.error(repr(e))
             print(repr(e))
     else:
-        raise Exception('获取座位信息异常：'+json.loads(result.text)['message'])
+        log = '获取座位信息异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
         
 # 预约指定座位        
 def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
@@ -136,12 +162,15 @@ def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     bookParams['startTime'] = stime
     bookParams['endTime'] = etime
     result = requests.post(url, params=bookParams, headers=headers)
+    logging.debug(result.text)
     print(result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         return [True,json.loads(result.text)['data']]
     else:
-        raise Exception('预约出现异常：'+json.loads(result.text)['message'])
+        log = '预约出现异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
 
 # 取消指定id的预约
 def cancelSeat(token,id):
@@ -151,7 +180,9 @@ def cancelSeat(token,id):
     if(status == 'success'):
         return True
     else:
-        raise Exception('取消预约异常：'+json.loads(result.text)['message'])
+        log = '取消预约异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        raise Exception(log)
 
 # 按时间筛选：date的格式2018-10-23 begin的示例600 roomIDs是list，按照优先级排序
 def searchSeatByTime(date,begin,end,roomIDs,token):
@@ -173,13 +204,17 @@ def searchSeatByTime(date,begin,end,roomIDs,token):
             data = json.loads(result.text)['data']['seats']
             # 若无空闲座位则进行下一个房间
             if(len(data)<1):
-                print('房间{}无空闲座位'.format(room))
+                log = '房间{}无空闲座位'.format(room)
+                logging.debug(log)
+                print(log)
                 continue
             for k in data:
                 seat = data[k]
                 seatIDs.append(seat['id'])
         else:
+            logging.error('搜索出错！')
             print('搜索出错！')
+    logging.debug(seatIDs)
     print(seatIDs)
     return seatIDs
 
@@ -192,7 +227,9 @@ def autoSearchBookByTime(token,startTime=[8,30],endTime=[21,0]):
     etime = endTime[0]*60 + endTime[1]
     while(num):
         IDs = searchSeatByTime(date,stime,etime,[14,16],token)
-        print('本次搜索到空闲座位：' + ''.join(map(str,IDs)))
+        log = '本次搜索到空闲座位：' + ''.join(map(str,IDs))
+        logging.debug(log)
+        print(log)
         if(len(IDs) > 0):
             result = reserveSeat(token,IDs[0],date,stime,etime)
             if(result[0]):
@@ -204,12 +241,15 @@ def autoSearchBookByTime(token,startTime=[8,30],endTime=[21,0]):
         num = num - 1
         # 随机等待30s-100s
         wait = random.randint(3,10)
-        print('{}s后进行下次尝试'.format(wait))
+        log = '{}s后进行下次尝试'.format(wait)
+        logging.debug(log)
+        print(log)
         time.sleep(wait)
     # 将相关信息发送到手机
     params = ['zfb',message]
+    logging.debug('----\n'+message)
     print('----\n'+message)
-    #sendSMS(config.PHONE_NUMBER,params)
+    sendSMS(config.PHONE_NUMBER,params)
 
 
 # 自动预约心仪的座位
@@ -221,6 +261,7 @@ def autoBookFavorite():
         token = login(config.USER,config.PASSWORD)
     except Exception as e:
         normal = False
+        logging.error(e)
         print(e)
     # 获取及写入座位信息
     #rooms = getRoomsInfo(token)
@@ -234,6 +275,7 @@ def autoBookFavorite():
         res = getReservations(token)
         # 如果当前存在预约信息则退出程序
         if res:
+            logging.debug('已有预约，程序将退出')
             print('已有预约，程序将退出')
             exit(1)
         try:
@@ -253,6 +295,7 @@ def autoBookFavorite():
                     if(isBooked):
                         break;
                 except Exception as e:
+                    logging.error(e)
                     print(e)
                     pass
         # 预约成功
@@ -268,6 +311,7 @@ def autoBookFavorite():
         message = '-1。\n登录出现问题！！！'
     # 将相关信息发送到手机
     params = ['zfb',message]
+    logging.debug('----\n'+message)
     print('----\n'+message)
     sendSMS(config.PHONE_NUMBER,params)
     #getHistory(1,token)
@@ -278,6 +322,7 @@ if __name__ == '__main__':
     try:
         token = login(config.USER,config.PASSWORD)
     except Exception as e:
+        logging.error(e)
         print(e)
     # 当前时间是否达到22:44:59
     now = int(time.strftime('%H%M%S'))
