@@ -38,3 +38,6 @@ DBNAME = 'reserve'
 
 # 数据库密码
 SQLPWD = '123456'
+
+# 预约网址
+URL_BASE = 'http://seat.lib.whu.edu.cn'
