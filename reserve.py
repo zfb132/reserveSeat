@@ -24,7 +24,6 @@ logging.basicConfig(filename='reserve.log', level=logging.DEBUG, format=LOG_FORM
 def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
     # 最大尝试次数
     num = 5000
-    print(startTime)
     stime = startTime[0]*60 + startTime[1]
     etime = endTime[0]*60 + endTime[1]
     while(num):
