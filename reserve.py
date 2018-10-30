@@ -124,6 +124,11 @@ if __name__ == '__main__':
     except Exception as e:
         logging.error(e)
         print(e)
+    # 如果当前存在预约信息则退出程序
+    res = getReservations(token)
+    if res:
+        logging.error('已有预约，程序将退出')
+        sys.exit('已有预约，程序将退出')
     # 当前时间是否达到22:44:59
     now = int(time.strftime('%H%M%S'))
     # 默认预约第二天，当01:00:00-22:00:00之间预约当天
@@ -138,6 +143,7 @@ if __name__ == '__main__':
         time.sleep(224459-now)
     else:
         # 不可预约的时间段
+        logging.error("非法时间段，不可预约")
         sys.exit("非法时间段，不可预约")
     # sys.argv[0]表示脚本名
     if(len(sys.argv)>1):
