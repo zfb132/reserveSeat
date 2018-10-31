@@ -118,13 +118,16 @@ def autoBookFavorite():
 
 
 if __name__ == '__main__':
+    logging.debug('进入主函数')
     # 登录预约系统
     try:
         token = login(config.USER,config.PASSWORD)
     except Exception as e:
         logging.error(e)
-        print(e)
+        sys.exit("登录失败，请检查用户名或密码")
+    logging.debug('登录成功')
     # 如果当前存在预约信息则退出程序
+    # res为空未必无预约，还需通过history中第一条记录的status判断
     res = getReservations(token)
     if res:
         logging.error('已有预约，程序将退出')
@@ -140,11 +143,18 @@ if __name__ == '__main__':
         date = tomorrow
     elif(now>=220000 and now <= 224459):
         date = tomorrow
-        time.sleep(224459-now)
+        # 之前的方案好像有bug ?
+        t = datetime.datetime.now()
+        st = '{}-{}-{} {}:{}:{}'.format(t.year,t.month,t.day,22,45,1)
+        startTime = datetime.datetime.strptime(st, "%Y-%m-%d %H:%M:%S")
+        logging.debug('休眠{}s'.format((startTime-t).seconds))
+        time.sleep((startTime-t).seconds)
+        logging.debug('休眠结束')
     else:
         # 不可预约的时间段
         logging.error("非法时间段，不可预约")
         sys.exit("非法时间段，不可预约")
+    logging.debug('开始运行自动搜索预约函数')
     # sys.argv[0]表示脚本名
     if(len(sys.argv)>1):
         mytime = list(map(int,sys.argv[1:len(sys.argv)]))
