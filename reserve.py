@@ -10,15 +10,13 @@ import requests
 import datetime
 import time
 import random
-import logging
 import sys
 
 import config
+from log import initLog
 from reserveSeat import *
 
-LOG_FORMAT = "%(asctime)s [%(funcName)s: %(filename)s,%(lineno)d] - %(levelname)s : %(message)s"
-DATE_FORMAT = "%m/%d/%Y %H:%M:%S"
-logging.basicConfig(filename='reserve.log', level=logging.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
+logging = initLog('reserve.log','reserve')
 
 # 自动按时间筛选并预约
 def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
@@ -115,7 +113,6 @@ def autoBookFavorite():
     logging.debug('----\n'+message)
     print('----\n'+message)
     sendSMS(config.PHONE_NUMBER,params)
-
 
 if __name__ == '__main__':
     logging.debug('进入主函数')
