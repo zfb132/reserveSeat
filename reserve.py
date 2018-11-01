@@ -26,11 +26,14 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
     etime = endTime[0]*60 + endTime[1]
     while(num):
         IDs = searchSeatByTime(date,stime,etime,[16,14],token)
-        log = '本次搜索到空闲座位：' + ''.join(map(str,IDs))
+        log = '本次搜索到空闲座位：' + ','.join(map(str,IDs))
         logging.debug(log)
         print(log)
         if(len(IDs) > 0):
-            result = reserveSeat(token,IDs[0],date,stime,etime)
+            # 预约中间的一个
+            index = int(len(IDs)/2)
+            logging.debug('将要预约第{}个，座位是{}'.format(index,IDs[index]))
+            result = reserveSeat(token,IDs[index],date,stime,etime)
             if(result[0]):
                 res = result[1]
                 message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
