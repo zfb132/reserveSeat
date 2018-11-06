@@ -148,7 +148,13 @@ if __name__ == '__main__':
         st = '{}-{}-{} {}:{}:{}'.format(t.year,t.month,t.day,22,45,1)
         startTime = datetime.datetime.strptime(st, "%Y-%m-%d %H:%M:%S")
         logging.debug('休眠{}s'.format((startTime-t).seconds))
-        time.sleep((startTime-t).seconds)
+        for i in range((startTime-t).seconds):
+            time.sleep(1)
+            #当前时间是否达到22:44:59
+            now = int(time.strftime('%H%M%S'))
+            if(now > 224459):
+                logging.debug('等待第{}个1s时break'.format(i))
+                break
         logging.debug('休眠结束')
     else:
         # 不可预约的时间段
