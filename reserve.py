@@ -41,8 +41,8 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
             else:
                 message = '-1。\n预约失败！！！'
         num = num - 1
-        # 随机等待30s-100s
-        wait = random.randint(2,5)
+        # 随机等待1s-5s
+        wait = random.randint(1,5)
         log = '{}s后进行下次尝试'.format(wait)
         logging.debug(log)
         print(log)
