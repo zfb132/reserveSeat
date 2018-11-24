@@ -48,7 +48,9 @@ def sendSMS(number,params):
 # 登录预约系统
 def login(user,pwd):
     url = url_base + "/rest/auth?username={}&password={}".format(user,pwd)
+    logging.debug(url)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         token = json.loads(result.text)['data']['token']
@@ -64,7 +66,9 @@ def login(user,pwd):
 # offset从1开始，每次获取10条记录
 def getHistory(offset,token):
     url = url_base + "/rest/v2/history/{}/10?token={}".format(offset,token)
+    logging.debug(url)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         history = json.loads(result.text)['data']['reservations']
@@ -77,7 +81,9 @@ def getHistory(offset,token):
 # 获取当前预约信息
 def getReservations(token):
     url = url_base + "/rest/v2/user/reservations?token={}".format(token)
+    logging.debug(url)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         reservations = json.loads(result.text)['data']
@@ -90,7 +96,9 @@ def getReservations(token):
 # 获取房间楼层信息
 def getRoomsInfo(token):
     url = url_base + "/rest/v2/free/filters?token={}".format(token)
+    logging.debug(url)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         data = json.loads(result.text)['data']
@@ -117,8 +125,10 @@ def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     bookParams['date'] = date
     bookParams['startTime'] = stime
     bookParams['endTime'] = etime
+    logging.debug(url)
+    logging.debug(bookParams)
     result = requests.post(url, params=bookParams, headers=headers)
-    logging.debug(result.text)
+    logging.debug('result:'+result.text)
     print(result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
@@ -126,12 +136,14 @@ def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     else:
         log = '预约出现异常：'+json.loads(result.text)['message']
         logging.error(log)
-        raise Exception(log)
+        #raise Exception(log)
 
 # 取消指定id的预约
 def cancelSeat(token,id):
     url = url_base + "/rest/v2/cancel/{}?token={}".format(id,token)
+    logging.debug(url)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         return True
@@ -153,8 +165,10 @@ def searchSeatByTime(date,begin,end,roomIDs,token):
     # 每个房间都要搜索
     for room in roomIDs:
         searchParams['roomId'] = room
+        logging.debug(url)
+        logging.debug(searchParams)
         result = requests.post(url,params=searchParams,headers=headers)
-        #print(result.text)
+        logging.debug('result:'+result.text)
         status = json.loads(result.text)['status']
         if(status == True):
             data = json.loads(result.text)['data']['seats']
@@ -181,6 +195,7 @@ def saveSeatsInfoOfRoom(id,date,token,roomInfo):
     print(log)
     url = url_base + "/rest/v2/room/layoutByDate/{}/{}?token={}".format(id,date,token)
     result = requests.get(url, headers=headers)
+    logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
         data = json.loads(result.text)['data']['layout']

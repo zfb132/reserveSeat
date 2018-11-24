@@ -25,7 +25,7 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
     stime = startTime[0]*60 + startTime[1]
     etime = endTime[0]*60 + endTime[1]
     while(num):
-        IDs = searchSeatByTime(date,stime,etime,[16,14],token)
+        IDs = searchSeatByTime(date,stime,etime,[16,14,13],token)
         log = '本次搜索到空闲座位：' + ','.join(map(str,IDs))
         logging.debug(log)
         print(log)
@@ -42,7 +42,7 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
                 message = '-1。\n预约失败！！！'
         num = num - 1
         # 随机等待30s-100s
-        wait = random.randint(1,5)
+        wait = random.randint(2,5)
         log = '{}s后进行下次尝试'.format(wait)
         logging.debug(log)
         print(log)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     try:
         token = login(config.USER,config.PASSWORD)
     except Exception as e:
-        logging.error(e)
+        #logging.error(e)
         sys.exit("登录失败，请检查用户名或密码")
     logging.debug('登录成功')
     # 如果当前存在预约信息则退出程序

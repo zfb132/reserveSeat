@@ -17,7 +17,7 @@ def initLog(fileName,logger):
         os.mkdir(LOG_PATH)
     myapp = logging.getLogger(logger)
     myapp.setLevel(logging.DEBUG)
-    handler = RotatingFileHandler(LOG_PATH+fileName, maxBytes=1024*1024, backupCount=20)
+    handler = RotatingFileHandler(LOG_PATH+fileName, maxBytes=128*1024, backupCount=60)
     handler.setFormatter(logging.Formatter(LOG_FORMAT,DATE_FORMAT))
     myapp.addHandler(handler)
     return myapp
