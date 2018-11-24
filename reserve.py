@@ -24,22 +24,37 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
     num = 5000
     stime = startTime[0]*60 + startTime[1]
     etime = endTime[0]*60 + endTime[1]
-    while(num):
-        IDs = searchSeatByTime(date,stime,etime,[16,14,13],token)
+    # booked为True表示预约成功
+    booked = False
+    while(num and not booked):
+        IDs = searchSeatByTime(date,stime,etime,[16,14],token)
         log = '本次搜索到空闲座位：' + ','.join(map(str,IDs))
         logging.debug(log)
         print(log)
-        if(len(IDs) > 0):
-            # 预约中间的一个
-            index = int(len(IDs)/2)
-            logging.debug('将要预约第{}个，座位是{}'.format(index,IDs[index]))
-            result = reserveSeat(token,IDs[index],date,stime,etime)
-            if(result[0]):
-                res = result[1]
-                message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
-                break;
+        # 最多更换五次，之后就重新获取空闲座位
+        for i in range(5):
+            if(len(IDs) > 0):
+                # 预约中间的一个
+                index = int(len(IDs)/2)
+                logging.debug('将要预约第{}个，座位是{}'.format(index,IDs[index]))
+                try:
+                    result = reserveSeat(token,IDs[index],date,stime,etime)
+                    if(result[0]):
+                        res = result[1]
+                        message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
+                        booked = True
+                        break;
+                    else:
+                        message = '-1。\n预约失败！！！'
+                except Exception as e:
+                    print("预约此座位异常，重新预约")
+                    logging.error("预约此座位异常，重新预约")
+                # 删除已经尝试过的座位
+                IDs.pop(index)
             else:
-                message = '-1。\n预约失败！！！'
+                break
+        if(booked):
+            break;
         num = num - 1
         # 随机等待1s-5s
         wait = random.randint(1,5)
