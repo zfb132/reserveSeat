@@ -10,8 +10,10 @@ import time
 import config
 import SQLHelper
 from reserveSeat import login, getRoomsInfo, saveSeatsInfoOfRoom
+from log import initLog
 
 if __name__ == '__main__':
+    logging = initLog('save.log','reserve')
     SQLHelper.initDataBase()
     SQLHelper.initTable()
     # 登录预约系统

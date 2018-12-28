@@ -40,4 +40,4 @@ DBNAME = 'reserve'
 SQLPWD = '123456'
 
 # 预约网址
-URL_BASE = 'http://seat.lib.whu.edu.cn'
+URL_BASE = 'https://seat.lib.whu.edu.cn:8443'

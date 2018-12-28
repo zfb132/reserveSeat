@@ -22,12 +22,19 @@ logging = initLog('reserve.log','reserve')
 def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
     # 最大尝试次数
     num = 5000
+    # 16 14 13
+    roomList = [14,13,16]
+    currentRoom = 0
     stime = startTime[0]*60 + startTime[1]
     etime = endTime[0]*60 + endTime[1]
     # booked为True表示预约成功
     booked = False
     while(num and not booked):
-        IDs = searchSeatByTime(date,stime,etime,[16,14],token)
+        if(currentRoom >= len(roomList)):
+            currentRoom = 0
+        tempList = []
+        tempList.append(roomList[currentRoom])
+        IDs = searchSeatByTime(date,stime,etime,tempList,token)
         log = '本次搜索到空闲座位：' + ','.join(map(str,IDs))
         logging.debug(log)
         print(log)
@@ -38,7 +45,7 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
                 index = int(len(IDs)/2)
                 logging.debug('将要预约第{}个，座位是{}'.format(index,IDs[index]))
                 try:
-                    result = reserveSeat(token,IDs[index],date,stime,etime)
+                    result = bookSeat(token,IDs[index],date,stime,etime)
                     if(result[0]):
                         res = result[1]
                         message = "{}\n{}--{}\n{}".format(res['receipt'],res['begin'],res['end'],res['location'])
@@ -56,6 +63,7 @@ def autoSearchBookByTime(date,token,startTime=[8,30],endTime=[21,0]):
         if(booked):
             break;
         num = num - 1
+        currentRoom = currentRoom + 1
         # 随机等待1s-5s
         wait = random.randint(1,5)
         log = '{}s后进行下次尝试'.format(wait)

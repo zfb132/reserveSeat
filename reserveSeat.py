@@ -8,6 +8,7 @@ import pymysql
 
 import json
 import requests
+import ssl
 import datetime
 import time
 import random
@@ -15,13 +16,16 @@ import logging
 
 import config
 import SQLHelper
-
+#代码页加入以下这个
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+# 禁用安全请求警告
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 logging = logging.getLogger('reserve.reserveSeat')
 
 # 报头
 headers = {
     'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 ",
-    'Host':"seat.lib.whu.edu.cn"
+    'Host':"seat.lib.whu.edu.cn:8443"
 }
 
 # 预约系统网址
@@ -49,7 +53,7 @@ def sendSMS(number,params):
 def login(user,pwd):
     url = url_base + "/rest/auth?username={}&password={}".format(user,pwd)
     logging.debug(url)
-    result = requests.get(url, headers=headers)
+    result = requests.get(url, headers=headers, verify=False)
     logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
@@ -82,7 +86,7 @@ def getHistory(offset,token):
 def getReservations(token):
     url = url_base + "/rest/v2/user/reservations?token={}".format(token)
     logging.debug(url)
-    result = requests.get(url, headers=headers)
+    result = requests.get(url, headers=headers,verify=False)
     logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
@@ -97,7 +101,7 @@ def getReservations(token):
 def getRoomsInfo(token):
     url = url_base + "/rest/v2/free/filters?token={}".format(token)
     logging.debug(url)
-    result = requests.get(url, headers=headers)
+    result = requests.get(url, headers=headers, verify=False)
     logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
@@ -116,6 +120,43 @@ def getRoomsInfo(token):
         logging.error(log)
         raise Exception(log)
 
+
+def bookSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
+    url = url_base + "/rest/v2/freeBook"
+    bookParams={
+        "startTime": str(stime),
+        "endTime": str(etime),
+        "seat": int(seat),
+        "date": str(date),
+        "t": "1",
+        "t2": "2"
+    }
+    #token=urllib.parse.urlencode(bookParams)
+    print(bookParams)
+    myheader={
+        'Host': 'seat.lib.whu.edu.cn:8443',
+        'Accept-Language': 'zh-cn', 
+        'Accept-Encoding': 'gzip, deflate', 
+        'Accept': '*/*', 
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 
+        'Connection': 'keep-alive', 
+        'token': str(token), 
+        'User-Agent': 'doSingle/11 CFNetwork/893.14.2 Darwin/17.3.0'
+    }
+    logging.debug(url)
+    logging.debug(bookParams)
+    logging.debug(myheader)
+    result = requests.post(url=url, headers=myheader, data=bookParams, verify=False)
+    logging.debug('result:'+result.text)
+    print(result.text)
+    status = json.loads(result.text)['status']
+    if(status == 'success'):
+        return [True,json.loads(result.text)['data']]
+    else:
+        log = '预约出现异常：'+json.loads(result.text)['message']
+        logging.error(log)
+        #raise Exception(log)
+
 # 预约指定座位        
 def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     url = url_base + "/rest/v2/freeBook"
@@ -127,7 +168,8 @@ def reserveSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
     bookParams['endTime'] = etime
     logging.debug(url)
     logging.debug(bookParams)
-    result = requests.post(url, params=bookParams, headers=headers)
+    ssl._create_default_https_context=ssl._create_unverified_context
+    result = requests.post(url, params=bookParams, headers=headers,verify =False)
     logging.debug('result:'+result.text)
     print(result.text)
     status = json.loads(result.text)['status']
@@ -167,7 +209,7 @@ def searchSeatByTime(date,begin,end,roomIDs,token):
         searchParams['roomId'] = room
         logging.debug(url)
         logging.debug(searchParams)
-        result = requests.post(url,params=searchParams,headers=headers)
+        result = requests.post(url,params=searchParams,headers=headers,verify=False)
         logging.debug('result:'+result.text)
         status = json.loads(result.text)['status']
         if(status == True):
@@ -192,9 +234,10 @@ def searchSeatByTime(date,begin,end,roomIDs,token):
 def saveSeatsInfoOfRoom(id,date,token,roomInfo):
     log = '正在获取位于{}{}楼的{}的座位信息'.format(roomInfo[1],roomInfo[2],roomInfo[0])
     logging.debug(log)
-    print(log)
+    print(log,id)
     url = url_base + "/rest/v2/room/layoutByDate/{}/{}?token={}".format(id,date,token)
-    result = requests.get(url, headers=headers)
+    #url = url_base + "/rest/v2/room/layoutByDate/{}/{}".format(id,date)
+    result = requests.get(url, headers=headers, verify=False)
     logging.debug('result:'+result.text)
     status = json.loads(result.text)['status']
     if(status == 'success'):
