@@ -3,7 +3,7 @@
 1. 基于Python3编写，因此需要首先安装Python3
 2. 依赖放在requirements.txt中，运行前需要先安装依赖的库  
 `pip install -r requirements.txt`
-3. 重命名`config.example.py`为`config.py`，修改里面的个人配置
+3. 重命名`config.example.py`为`config.py`，修改里面的个人配置，注意自己申请腾讯云短信应用
 ## 运行程序
 开始预约，系统会自动预约指定房间（可以多个）的空闲座位，打开终端切换到当前目录并输入：  
 `python3 reserve.py`  
