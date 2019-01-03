@@ -143,9 +143,7 @@ def bookSeat(token,seat,date,stime=config.STIME,etime=config.ETIME):
         'token': str(token), 
         'User-Agent': 'doSingle/11 CFNetwork/893.14.2 Darwin/17.3.0'
     }
-    logging.debug(url)
-    logging.debug(bookParams)
-    logging.debug(myheader)
+    logging.debug('url: {}\n,params: {}\n,headers: {}'.format(url,bookParams,myheader))
     result = requests.post(url=url, headers=myheader, data=bookParams, verify=False)
     logging.debug('result:'+result.text)
     print(result.text)
