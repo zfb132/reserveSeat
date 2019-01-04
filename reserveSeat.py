@@ -5,6 +5,9 @@
 from qcloudsms_py import SmsSingleSender
 from qcloudsms_py.httpclient import HTTPError
 import pymysql
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 
 import json
 import requests
@@ -48,6 +51,25 @@ def sendSMS(number,params):
     log = json.dumps(result, ensure_ascii=False)
     logging.debug(log)
     print(log)
+
+#发送邮件
+def sendEmail(email,subject,msg):
+    # 自己的邮箱
+    sender = 'admin@whuzfb.cn'
+    pwd = '******'
+    # 三个参数：第一个为文本内容，第二个为plain设置文本格式，第三个为utf-8设置编码
+    message = MIMEText(msg,"plain",'utf-8')
+    message ['From'] = Header(sender,'utf-8')
+    message ['To'] = Header(email,'utf-8')
+    message["Subject"] = Header(subject,"utf-8")
+    try:
+        # 使用非本地服务器，需要建立ssl连接
+        smtpObj = smtplib.SMTP_SSL("smtp.exmail.qq.com",465)
+        smtpObj.login(sender,pwd)
+        smtpObj.sendmail(sender,email,message.as_string())
+        print("邮件发送成功")
+    except smtplib.SMTPException as e:
+        print("Error：无法发送邮件.Case:%s"%e)
     
 # 登录预约系统
 def login(user,pwd):
