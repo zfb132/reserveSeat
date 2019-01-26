@@ -16,4 +16,9 @@
 这句话意思是：每天的22:45分开始运行本程序（假设本程序位于主目录下，根据实际位置自行更改`py`文件路径）
 ## 其他信息
 保存所有座位信息到数据库：  
-`python3 saveSeats.py`
+`python3 saveSeats.py`  
+## API相关
+获取所有自习室的接口又改变了：  
+~~`/rest/v2/free/filters?token={}`~~ -> `/rest/v2/room/stats2/0?token=`  
+获取某个图书馆内的自习室的接口也改变了：  
+~~`/rest/v2/room/layoutByDate/{}/{}?token={}`~~ -> `/rest/v2/room/stats2/{}?token=`
