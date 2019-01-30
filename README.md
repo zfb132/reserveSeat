@@ -21,4 +21,5 @@
 获取所有自习室的接口又改变了：  
 ~~`/rest/v2/free/filters?token={}`~~ -> `/rest/v2/room/stats2/0?token=`  
 获取某个图书馆内的自习室的接口也改变了：  
-~~`/rest/v2/room/layoutByDate/{}/{}?token={}`~~ -> `/rest/v2/room/stats2/{}?token=`
+~~`/rest/v2/room/layoutByDate/{}/{}?token={}`~~ -> `/rest/v2/room/stats2/{}?token=`  
+（它又改回来了，应该是在测试新接口吧）
