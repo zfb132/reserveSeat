@@ -153,6 +153,7 @@ if __name__ == '__main__':
     # res为空未必无预约，还需通过history中第一条记录的status判断
     res = getReservations(token)
     if res:
+        print(res)
         logging.error('已有预约，程序将退出')
         sys.exit('已有预约，程序将退出')
     # 当前时间是否达到22:44:59
